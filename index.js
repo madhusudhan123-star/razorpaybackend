@@ -10,6 +10,15 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+app.use(cors({
+  origin: [
+    'https://drjoints.in/', // Your deployed frontend
+    'https://drjoints.vercel.app', // Your deployed frontend
+    'http://localhost:3000'        // Local development frontend
+  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(bodyParser.json());
 
 // Razorpay Configuration
