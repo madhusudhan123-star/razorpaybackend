@@ -12,8 +12,8 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: [
-    'https://drjoints.in/', // Your deployed frontend
     'https://drjoints.vercel.app', // Your deployed frontend
+    'https://drjoints.in/', // Your deployed frontend
     'http://localhost:3000'        // Local development frontend
   ],
   methods: ['GET', 'POST', 'OPTIONS'],
