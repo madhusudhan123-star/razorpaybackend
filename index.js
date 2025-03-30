@@ -3,22 +3,27 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const Razorpay = require("razorpay"); // Add Razorpay SDK
-const crypto = require("crypto"); // For payment verification
+const Razorpay = require("razorpay");
+const crypto = require("crypto");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Improved CORS configuration
 app.use(cors({
   origin: [
-    'https://drjoints.vercel.app', // Your deployed frontend
-    'https://drjoints.in/', // Your deployed frontend
-    'http://localhost:3000'        // Local development frontend
+    'https://drjoints.vercel.app',
+    'https://drjoints.in', // Removed trailing slash
+    'http://localhost:3000'
   ],
+  credentials: true,  // Added for credential requests
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Add OPTIONS handling for preflight requests
+app.options('*', cors());
+
 app.use(bodyParser.json());
 
 // Razorpay Configuration
