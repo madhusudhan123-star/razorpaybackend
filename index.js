@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: [
+    'https://glowglaz.vercel.app', // Added new origin
     'https://drjoints.in', // Fixed: removed trailing slash
     'https://drjoints.vercel.app',
     'http://localhost:3000'
