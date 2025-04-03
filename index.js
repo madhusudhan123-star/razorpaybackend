@@ -102,7 +102,6 @@ app.post("/send-order-confirmation", async (req, res) => {
     Thank you for shopping with us!
     
     Best regards,
-    The Dr. Joints Team
   `;
   
   const mailOptions = {
