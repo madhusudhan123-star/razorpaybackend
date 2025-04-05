@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: [
+    'https://beyondslim.in', // Fixed: added missing comma
     'https://glowglaz.com', // Fixed: removed trailing slash
     'https://glowglaz-vert.vercel.app', // Added new origin
     'https://drjoints.in', // Fixed: removed trailing slash
@@ -262,6 +263,38 @@ app.post("/verify-payment", async (req, res) => {
       error: error.message,
     });
   }
+});
+
+// Server Metrics Route
+app.get("/server-metrics", (req, res) => {
+  // Get initial CPU measurements
+  const startCpuUsage = process.cpuUsage();
+  
+  // Add a small delay to measure CPU usage over time
+  setTimeout(() => {
+    // Get CPU usage after delay to calculate difference
+    const endCpuUsage = process.cpuUsage(startCpuUsage);
+    
+    // Get memory usage
+    const memoryUsage = process.memoryUsage();
+    
+    // Format and return the metrics
+    res.status(200).json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      cpu: {
+        user: `${Math.round(endCpuUsage.user / 1000)} microseconds`,
+        system: `${Math.round(endCpuUsage.system / 1000)} microseconds`,
+      },
+      memory: {
+        rss: `${Math.round(memoryUsage.rss / 1024 / 1024)} MB`, // Resident Set Size
+        heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)} MB`, // Total heap size
+        heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)} MB`, // Used heap size
+        external: `${Math.round(memoryUsage.external / 1024 / 1024)} MB`, // External memory
+        arrayBuffers: `${Math.round((memoryUsage.arrayBuffers || 0) / 1024 / 1024)} MB` // ArrayBuffers memory
+      }
+    });
+  }, 100); // 100ms delay to measure CPU usage
 });
 
 // Start Server
