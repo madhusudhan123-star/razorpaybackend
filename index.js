@@ -79,6 +79,7 @@ app.post("/send-order-confirmation", async (req, res) => {
   // Format the email content
   const emailSubject = `Order Confirmation #${orderDetails.orderNumber}`;
   
+  // Enhanced email template with more customer details
   const emailContent = `
     Dear ${customerDetails.firstName} ${customerDetails.lastName},
     
@@ -90,11 +91,18 @@ app.post("/send-order-confirmation", async (req, res) => {
     - Quantity: ${orderDetails.quantity}
     - Total Amount: ${orderDetails.currency || '₹'} ${orderDetails.totalAmount}
     - Payment Method: ${orderDetails.paymentMethod}
+    - Payment ID: ${orderDetails.paymentId || 'N/A'}
+    
+    Customer Details:
+    - Name: ${customerDetails.firstName} ${customerDetails.lastName}
+    - Email: ${customerEmail}
+    - Phone: ${customerDetails.phone || 'Not provided'}
     
     Shipping Address:
-    ${customerDetails.address}
-    ${customerDetails.apartment ? customerDetails.apartment + ', ' : ''}
-    ${customerDetails.city}, ${customerDetails.country}
+    ${customerDetails.address || ''}
+    ${customerDetails.apartment ? customerDetails.apartment + '\n' : ''}
+    ${customerDetails.city || ''}${customerDetails.city && customerDetails.state ? ', ' : ''}${customerDetails.state || ''}${(customerDetails.city || customerDetails.state) && customerDetails.zip ? ' - ' : ''}${customerDetails.zip || ''}
+    ${customerDetails.country || ''}
     
     We will process your order shortly. You will receive another email once your order ships.
     
@@ -103,6 +111,7 @@ app.post("/send-order-confirmation", async (req, res) => {
     Thank you for shopping with us!
     
     Best regards,
+    PSORIGO Team
   `;
   
   const mailOptions = {
@@ -144,6 +153,7 @@ app.post("/send-abandoned-order-email", async (req, res) => {
   // Format the email content
   const emailSubject = `We noticed you didn't complete your order #${orderDetails.orderNumber}`;
   
+  // Enhanced email template with better formatting for customer details
   const emailContent = `
     Dear ${customerDetails.firstName} ${customerDetails.lastName},
     
@@ -152,13 +162,16 @@ app.post("/send-abandoned-order-email", async (req, res) => {
     Customer Details:
     - Name: ${customerDetails.firstName} ${customerDetails.lastName}
     - Email: ${customerDetails.email}
-    - Phone: ${customerDetails.phone}
-    - Address: ${customerDetails.address}
-    ${customerDetails.apartment ? '- Apartment: ' + customerDetails.apartment : ''}
-    - City: ${customerDetails.city}
-    - Country: ${customerDetails.country}
+    - Phone: ${customerDetails.phone || 'Not provided'}
+    
+    Address Information:
+    ${customerDetails.address || 'Address not provided'}
+    ${customerDetails.apartment ? customerDetails.apartment + '\n' : ''}
+    ${customerDetails.city || ''}${customerDetails.city && customerDetails.state ? ', ' : ''}${customerDetails.state || ''}${(customerDetails.city || customerDetails.state) && customerDetails.zip ? ' - ' : ''}${customerDetails.zip || ''}
+    ${customerDetails.country || ''}
     
     Order Details:
+    - Order ID: ${orderDetails.orderNumber}
     - Product: ${orderDetails.productName}
     - Quantity: ${orderDetails.quantity}
     - Total Amount: ${orderDetails.currency || '₹'} ${orderDetails.totalAmount}
@@ -171,7 +184,7 @@ app.post("/send-abandoned-order-email", async (req, res) => {
     Thank you for considering our products!
     
     Best regards,
-    The Dr. Joints Team
+    PSORIGO Team
   `;
   
   const mailOptions = {
