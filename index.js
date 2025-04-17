@@ -6,6 +6,21 @@ const bodyParser = require("body-parser");
 const Razorpay = require("razorpay"); // Add Razorpay SDK
 const crypto = require("crypto"); // For payment verification
 
+// Handle fetch import based on Node.js version
+let fetch;
+try {
+  // For Node.js >= 18 (with built-in fetch)
+  if (!globalThis.fetch) {
+    fetch = require("node-fetch");
+  } else {
+    fetch = globalThis.fetch;
+  }
+} catch (error) {
+  console.error("Error importing fetch:", error);
+  // Fallback to node-fetch
+  fetch = require("node-fetch");
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -37,6 +52,59 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+});
+
+// YouTube Subscription Verification API
+app.post("/verify-youtube-subscription", async (req, res) => {
+  const { accessToken, channelId, devMode, verificationCode } = req.body;
+  
+  // Development mode bypass for testing (only use in development!)
+  if (devMode === true && verificationCode === process.env.DEV_VERIFICATION_CODE) {
+    return res.status(200).json({
+      success: true,
+      isSubscribed: true,
+      message: "Development mode: Subscription verified! 10% discount applied."
+    });
+  }
+  
+  try {
+    // Fetch the user's subscription list using the access token
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.error) {
+      return res.status(400).json({
+        success: false,
+        message: "Failed to verify subscription",
+        error: data.error
+      });
+    }
+    
+    // Check if the user is subscribed to the specified channel
+    const isSubscribed = data.items && data.items.some(
+      item => item.snippet.resourceId.channelId === channelId
+    );
+    
+    res.status(200).json({
+      success: true,
+      isSubscribed,
+      message: isSubscribed 
+        ? "Subscription verified! 10% discount applied." 
+        : "Not subscribed to the channel."
+    });
+  } catch (error) {
+    console.error("YouTube subscription verification error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to verify YouTube subscription",
+      error: error.message
+    });
+  }
 });
 
 // Email Sending Route
