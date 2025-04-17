@@ -27,6 +27,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: [
+    'https://glowglazecommerce.vercel.app/', // Fixed: removed trailing slash
     'https://beyondslim.in', // Fixed: added missing comma
     'https://glowglaz.com', // Fixed: removed trailing slash
     'https://glowglaz-vert.vercel.app', // Added new origin
