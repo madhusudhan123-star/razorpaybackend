@@ -27,16 +27,17 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: [
-    'https://glowglazecommerce.vercel.app/', // Fixed: removed trailing slash
-    'https://beyondslim.in', // Fixed: added missing comma
-    'https://glowglaz.com', // Fixed: removed trailing slash
-    'https://glowglaz-vert.vercel.app', // Added new origin
-    'https://drjoints.in', // Fixed: removed trailing slash
+    'https://glowglazecommerce.vercel.app', // Fixed: removed trailing slash and added this domain correctly
+    'https://beyondslim.in',
+    'https://glowglaz.com',
+    'https://glowglaz-vert.vercel.app',
+    'https://drjoints.in',
     'https://drjoints.vercel.app',
     'http://localhost:3000'
   ],
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // Add credentials support for cookies/auth headers if needed
 }));
 app.use(bodyParser.json());
 
