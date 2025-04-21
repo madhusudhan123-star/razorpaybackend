@@ -149,7 +149,38 @@ app.post("/send-order-confirmation", async (req, res) => {
   // Format the email content
   const emailSubject = `Order Confirmation #${orderDetails.orderNumber}`;
   
-  // Enhanced email template with more customer details
+  // Check if orderDetails.products is an array for multiple products
+  const hasMultipleProducts = Array.isArray(orderDetails.products) && orderDetails.products.length > 0;
+  
+  // Generate product table content
+  let productsContent = '';
+  
+  if (hasMultipleProducts) {
+    // Create a table for multiple products
+    productsContent = `Products:
+  +${'-'.repeat(40)}+${'-'.repeat(10)}+${'-'.repeat(15)}+
+  | Product Name                            | Quantity | Price        |
+  +${'-'.repeat(40)}+${'-'.repeat(10)}+${'-'.repeat(15)}+
+  `;
+
+    // Add each product as a row in the table
+    orderDetails.products.forEach(product => {
+      const name = (product.name || '').padEnd(40).substring(0, 40);
+      const quantity = (product.quantity?.toString() || '').padEnd(10).substring(0, 10);
+      const price = ((orderDetails.currency || '₹') + ' ' + (product.price || '')).padEnd(15).substring(0, 15);
+      
+      productsContent += `| ${name} | ${quantity} | ${price} |
+  `;
+    });
+    
+    productsContent += `+${'-'.repeat(40)}+${'-'.repeat(10)}+${'-'.repeat(15)}+`;
+  } else {
+    // Single product format
+    productsContent = `Product: ${orderDetails.productName || 'N/A'}
+  Quantity: ${orderDetails.quantity || '1'}`;
+  }
+  
+  // Enhanced email template with more customer details and product table
   const emailContent = `
     Dear ${customerDetails.firstName} ${customerDetails.lastName},
     
@@ -157,8 +188,7 @@ app.post("/send-order-confirmation", async (req, res) => {
     
     Order Details:
     - Order Number: ${orderDetails.orderNumber}
-    - Product: ${orderDetails.productName}
-    - Quantity: ${orderDetails.quantity}
+    ${productsContent}
     - Total Amount: ${orderDetails.currency || '₹'} ${orderDetails.totalAmount}
     - Payment Method: ${orderDetails.paymentMethod}
     - Payment ID: ${orderDetails.paymentId || 'N/A'}
@@ -181,7 +211,67 @@ app.post("/send-order-confirmation", async (req, res) => {
     Thank you for shopping with us!
     
     Best regards,
-    PSORIGO Team
+    
+  `;
+  
+  // Add HTML version of the email
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Order Confirmation</h2>
+      <p>Dear ${customerDetails.firstName} ${customerDetails.lastName},</p>
+      
+      <p>Thank you for your order! We're pleased to confirm that your order has been successfully placed.</p>
+      
+      <h3>Order Details:</h3>
+      <p><strong>Order Number:</strong> ${orderDetails.orderNumber}</p>
+      
+      ${hasMultipleProducts ? 
+        `<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr style="background-color: #f2f2f2;">
+            <th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Product Name</th>
+            <th style="text-align: center; padding: 8px; border: 1px solid #ddd;">Quantity</th>
+            <th style="text-align: right; padding: 8px; border: 1px solid #ddd;">Price</th>
+          </tr>
+          ${orderDetails.products.map(product => 
+            `<tr>
+              <td style="padding: 8px; border: 1px solid #ddd;">${product.name || ''}</td>
+              <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${product.quantity || ''}</td>
+              <td style="text-align: right; padding: 8px; border: 1px solid #ddd;">${orderDetails.currency || '₹'} ${product.price || ''}</td>
+            </tr>`
+          ).join('')}
+        </table>` 
+        : 
+        `<p><strong>Product:</strong> ${orderDetails.productName || 'N/A'}<br>
+        <strong>Quantity:</strong> ${orderDetails.quantity || '1'}</p>`
+      }
+      
+      <p><strong>Total Amount:</strong> ${orderDetails.currency || '₹'} ${orderDetails.totalAmount}<br>
+      <strong>Payment Method:</strong> ${orderDetails.paymentMethod}<br>
+      <strong>Payment ID:</strong> ${orderDetails.paymentId || 'N/A'}</p>
+      
+      <h3>Customer Details:</h3>
+      <p>
+        <strong>Name:</strong> ${customerDetails.firstName} ${customerDetails.lastName}<br>
+        <strong>Email:</strong> ${customerEmail}<br>
+        <strong>Phone:</strong> ${customerDetails.phone || 'Not provided'}
+      </p>
+      
+      <h3>Shipping Address:</h3>
+      <p>
+        ${customerDetails.address || ''}<br>
+        ${customerDetails.apartment ? customerDetails.apartment + '<br>' : ''}
+        ${customerDetails.city || ''}${customerDetails.city && customerDetails.state ? ', ' : ''}${customerDetails.state || ''}${(customerDetails.city || customerDetails.state) && customerDetails.zip ? ' - ' : ''}${customerDetails.zip || ''}<br>
+        ${customerDetails.country || ''}
+      </p>
+      
+      <p>We will process your order shortly. You will receive another email once your order ships.</p>
+      
+      <p>If you have any questions, please contact our customer service.</p>
+      
+      <p>Thank you for shopping with us!</p>
+      
+      <p>Best regards,<br></p>
+    </div>
   `;
   
   const mailOptions = {
@@ -190,6 +280,7 @@ app.post("/send-order-confirmation", async (req, res) => {
     cc: process.env.EMAIL_USER, // CC to admin email
     subject: emailSubject,
     text: emailContent,
+    html: htmlContent // Add HTML version for better formatting
   };
 
   try {
@@ -201,7 +292,7 @@ app.post("/send-order-confirmation", async (req, res) => {
     console.error("Error sending confirmation email:", error);
     res.status(500).json({ success: false, message: "Failed to send confirmation email", error: error.message });
   }
-});
+  });
 
 // Abandoned Order Follow-up Email Route
 app.post("/send-abandoned-order-email", async (req, res) => {
@@ -223,6 +314,37 @@ app.post("/send-abandoned-order-email", async (req, res) => {
   // Format the email content
   const emailSubject = `We noticed you didn't complete your order #${orderDetails.orderNumber}`;
   
+  // Check if orderDetails.products is an array for multiple products
+  const hasMultipleProducts = Array.isArray(orderDetails.products) && orderDetails.products.length > 0;
+  
+  // Generate product table content
+  let productsContent = '';
+  
+  if (hasMultipleProducts) {
+    // Create a table for multiple products
+    productsContent = `Products:
+  +${'-'.repeat(40)}+${'-'.repeat(10)}+${'-'.repeat(15)}+
+  | Product Name                            | Quantity | Price        |
+  +${'-'.repeat(40)}+${'-'.repeat(10)}+${'-'.repeat(15)}+
+  `;
+
+    // Add each product as a row in the table
+    orderDetails.products.forEach(product => {
+      const name = (product.name || '').padEnd(40).substring(0, 40);
+      const quantity = (product.quantity?.toString() || '').padEnd(10).substring(0, 10);
+      const price = ((orderDetails.currency || '₹') + ' ' + (product.price || '')).padEnd(15).substring(0, 15);
+      
+      productsContent += `| ${name} | ${quantity} | ${price} |
+  `;
+    });
+    
+    productsContent += `+${'-'.repeat(40)}+${'-'.repeat(10)}+${'-'.repeat(15)}+`;
+  } else {
+    // Single product format
+    productsContent = `Product: ${orderDetails.productName || 'N/A'}
+  Quantity: ${orderDetails.quantity || '1'}`;
+  }
+  
   // Enhanced email template with better formatting for customer details
   const emailContent = `
     Dear ${customerDetails.firstName} ${customerDetails.lastName},
@@ -242,8 +364,7 @@ app.post("/send-abandoned-order-email", async (req, res) => {
     
     Order Details:
     - Order ID: ${orderDetails.orderNumber}
-    - Product: ${orderDetails.productName}
-    - Quantity: ${orderDetails.quantity}
+    ${productsContent}
     - Total Amount: ${orderDetails.currency || '₹'} ${orderDetails.totalAmount}
     
     We'd love to know if you experienced any issues during checkout or if you have any questions about our product.
@@ -254,7 +375,66 @@ app.post("/send-abandoned-order-email", async (req, res) => {
     Thank you for considering our products!
     
     Best regards,
-    PSORIGO Team
+    
+  `;
+  
+  // Add HTML version of the email
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Your Shopping Cart is Waiting</h2>
+      <p>Dear ${customerDetails.firstName} ${customerDetails.lastName},</p>
+      
+      <p>We noticed that you recently started an order on our website but didn't complete the checkout process.</p>
+      
+      <h3>Order Details:</h3>
+      <p><strong>Order Number:</strong> ${orderDetails.orderNumber}</p>
+      
+      ${hasMultipleProducts ? 
+        `<table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr style="background-color: #f2f2f2;">
+            <th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Product Name</th>
+            <th style="text-align: center; padding: 8px; border: 1px solid #ddd;">Quantity</th>
+            <th style="text-align: right; padding: 8px; border: 1px solid #ddd;">Price</th>
+          </tr>
+          ${orderDetails.products.map(product => 
+            `<tr>
+              <td style="padding: 8px; border: 1px solid #ddd;">${product.name || ''}</td>
+              <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">${product.quantity || ''}</td>
+              <td style="text-align: right; padding: 8px; border: 1px solid #ddd;">${orderDetails.currency || '₹'} ${product.price || ''}</td>
+            </tr>`
+          ).join('')}
+        </table>` 
+        : 
+        `<p><strong>Product:</strong> ${orderDetails.productName || 'N/A'}<br>
+        <strong>Quantity:</strong> ${orderDetails.quantity || '1'}</p>`
+      }
+      
+      <p><strong>Total Amount:</strong> ${orderDetails.currency || '₹'} ${orderDetails.totalAmount}</p>
+      
+      <h3>Customer Details:</h3>
+      <p>
+        <strong>Name:</strong> ${customerDetails.firstName} ${customerDetails.lastName}<br>
+        <strong>Email:</strong> ${customerDetails.email || customerEmail}<br>
+        <strong>Phone:</strong> ${customerDetails.phone || 'Not provided'}
+      </p>
+      
+      <h3>Shipping Address:</h3>
+      <p>
+        ${customerDetails.address || 'Address not provided'}<br>
+        ${customerDetails.apartment ? customerDetails.apartment + '<br>' : ''}
+        ${customerDetails.city || ''}${customerDetails.city && customerDetails.state ? ', ' : ''}${customerDetails.state || ''}${(customerDetails.city || customerDetails.state) && customerDetails.zip ? ' - ' : ''}${customerDetails.zip || ''}<br>
+        ${customerDetails.country || ''}
+      </p>
+      
+      <p>We'd love to know if you experienced any issues during checkout or if you have any questions about our product.</p>
+      <p>You can simply reply to this email, and we'll be happy to assist you.</p>
+      
+      <p>If you'd like to complete your purchase, you can return to our website and try again.</p>
+      
+      <p>Thank you for considering our products!</p>
+      
+      <p>Best regards,<br></p>
+    </div>
   `;
   
   const mailOptions = {
@@ -263,6 +443,7 @@ app.post("/send-abandoned-order-email", async (req, res) => {
     cc: process.env.EMAIL_USER, // CC to admin email
     subject: emailSubject,
     text: emailContent,
+    html: htmlContent // Add HTML version for better formatting
   };
 
   try {
