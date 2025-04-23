@@ -27,7 +27,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: [
-    'https://www.myiandi.com',
+    'https://myiandi.com',
     'https://vlog-camera.vercel.app',
     'https://glowglazecommerce.vercel.app', // Fixed: removed trailing slash and added this domain correctly
     'https://beyondslim.in',
