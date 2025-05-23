@@ -1,0 +1,29 @@
+{
+  "name": "shiprocket-api",
+  "version": "1.1.4",
+  "description": "Shiprocket api for react , react native and node js",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Solaimanx/shiprocket-api.git"
+  },
+  "keywords": [
+    "shiprocket",
+    "shiprocket api",
+    "react",
+    "react native",
+    "nodejs"
+  ],
+  "author": "Mohammad Solaiman",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Solaimanx/shiprocket-api/issues"
+  },
+  "homepage": "https://github.com/Solaimanx/shiprocket-api#readme",
+  "dependencies": {
+    "axios": "^0.24.0"
+  }
+}
