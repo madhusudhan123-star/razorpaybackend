@@ -28,6 +28,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: [
+    'https://agent-sigma-livid.vercel.app/',
     'https://sacredrelm.com',
     'https://myiandi.com',
     'https://vlog-camera.vercel.app',
@@ -417,40 +418,6 @@ app.post("/send-order-confirmation", async (req, res) => {
   Quantity: ${orderDetails.quantity || '1'}`;
   }
   
-  // Enhanced email template with more customer details and product table
-  const emailContent = `
-    Dear ${customerDetails.firstName} ${customerDetails.lastName},
-    
-    Thank you for your order! We're pleased to confirm that your order has been successfully placed.
-    
-    Order Details:
-    - Order Number: ${orderDetails.orderNumber}
-    ${productsContent}
-    - Total Amount: ${orderDetails.currency || '₹'} ${orderDetails.totalAmount}
-    - Payment Method: ${orderDetails.paymentMethod}
-    - Payment ID: ${orderDetails.paymentId || 'N/A'}
-    
-    Customer Details:
-    - Name: ${customerDetails.firstName} ${customerDetails.lastName}
-    - Email: ${customerEmail}
-    - Phone: ${customerDetails.phone || 'Not provided'}
-    
-    Shipping Address:
-    ${customerDetails.address || ''}
-    ${customerDetails.apartment ? customerDetails.apartment + '\n' : ''}
-    ${customerDetails.city || ''}${customerDetails.city && customerDetails.state ? ', ' : ''}${customerDetails.state || ''}${(customerDetails.city || customerDetails.state) && customerDetails.zip ? ' - ' : ''}${customerDetails.zip || ''}
-    ${customerDetails.country || ''}
-    
-    We will process your order shortly. You will receive another email once your order ships.
-    
-    If you have any questions, please contact our customer service.
-    
-    Thank you for shopping with us!
-    
-    Best regards,
-    
-  `;
-  
   // Add HTML version of the email
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -506,7 +473,7 @@ app.post("/send-order-confirmation", async (req, res) => {
       <p>If you have any questions, please contact our customer service.</p>
       
       <p>Thank you for shopping with us!</p>
-      
+      <h1>madhusudhan</h1>
       <p>Best regards,<br></p>
     </div>
   `;
@@ -516,7 +483,6 @@ app.post("/send-order-confirmation", async (req, res) => {
     to: customerEmail,
     cc: process.env.EMAIL_USER, // CC to admin email
     subject: emailSubject,
-    text: emailContent,
     html: htmlContent // Add HTML version for better formatting
   };
 
@@ -611,7 +577,7 @@ app.post("/send-abandoned-order-email", async (req, res) => {
     If you'd like to complete your purchase, you can return to our website and try again.
     
     Thank you for considering our products!
-    
+    Madhusudhan
     Best regards,
     
   `;
@@ -769,6 +735,281 @@ app.post("/verify-payment", async (req, res) => {
 
 
 
+// Order Confirmation Email Route
+app.post("/agent_to_customer", async (req, res) => {
+  const { customerEmail, orderDetails, customerDetails, productName } = req.body;
+  
+  // Log the incoming request data
+  console.log("Received order confirmation request:", { 
+    customerEmail, 
+    orderDetails: JSON.stringify(orderDetails),
+    customerDetails: JSON.stringify(customerDetails),
+    productName
+  });
+  
+  if (!customerEmail) {
+    return res.status(400).json({
+      success: false,
+      message: "Customer email is required"
+    });
+  }
+  
+  // Format the email content
+  const emailSubject = `Order Confirmation #${orderDetails.orderNumber}`;
+  
+  // Check if orderDetails.products is an array for multiple products
+  const hasMultipleProducts = Array.isArray(orderDetails.products) && orderDetails.products.length > 0;
+  
+  // Generate product table content
+  let productsContent = '';
+  
+  if (hasMultipleProducts) {
+    // Create a table for multiple products
+    productsContent = `Products:
+    +${'-'.repeat(40)}+${'-'.repeat(10)}+${'-'.repeat(15)}+
+    | Product Name                            | Quantity | Price        |
+    +${'-'.repeat(40)}+${'-'.repeat(10)}+${'-'.repeat(15)}+`;
+
+    // Add each product as a row in the table
+    orderDetails.products.forEach(product => {
+      const name = (product.name || '').padEnd(40).substring(0, 40);
+      const quantity = (product.quantity?.toString() || '').padEnd(10).substring(0, 10);
+      const price = ((orderDetails.currency || '₹') + ' ' + (product.price || '')).padEnd(15).substring(0, 15);
+      
+      productsContent += `| ${name} | ${quantity} | ${price} |`;
+    });
+    
+    productsContent += `+${'-'.repeat(40)}+${'-'.repeat(10)}+${'-'.repeat(15)}+`;
+  } else {
+    // Single product format
+    productsContent = `Product: ${orderDetails.productName || 'N/A'}
+    Quantity: ${orderDetails.quantity || '1'}`;
+  }
+  
+  // Add HTML version of the email
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Confirmation</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8f9fa;">
+            <tr>
+                <td align="center" style="padding: 20px 0;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden;">
+                        
+                        <!-- Header with Brand -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+                                <div style="background-color: white; width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/2331/2331970.png" alt="Order Confirmed" style="width: 50px; height: 50px;">
+                                </div>
+                                <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Order Confirmed!</h1>
+                                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">Thank you for your purchase</p>
+                            </td>
+                        </tr>
+                        
+                        <!-- Main Content -->
+                        <tr>
+                            <td style="padding: 40px 30px;">
+                                
+                                <!-- Greeting -->
+                                <div style="margin-bottom: 30px;">
+                                    <h2 style="color: #2c3e50; margin: 0 0 15px; font-size: 24px; font-weight: 600;">Hello ${customerDetails.firstName}! 👋</h2>
+                                    <p style="color: #5a6c7d; line-height: 1.6; margin: 0; font-size: 16px;">
+                                        We're excited to confirm that your order has been successfully placed and is being processed. Here are the details:
+                                    </p>
+                                </div>
+                                
+                                <!-- Order Summary Card -->
+                                <div style="background: linear-gradient(145deg, #f8f9ff 0%, #e8f2ff 100%); border-radius: 12px; padding: 25px; margin-bottom: 30px; border: 1px solid #e3f2fd;">
+                                    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                                        <img src="https://cdn-icons-png.flaticon.com/512/3081/3081559.png" alt="Order" style="width: 24px; height: 24px; margin-right: 10px;">
+                                        <h3 style="color: #2c3e50; margin: 0; font-size: 20px; font-weight: 600;">Order Summary</h3>
+                                    </div>
+                                    
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #5a6c7d; font-weight: 500;">Order Number:</td>
+                                            <td style="padding: 8px 0; color: #2c3e50; font-weight: 700; text-align: right;">#${orderDetails.orderNumber}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #5a6c7d; font-weight: 500;">Total Amount:</td>
+                                            <td style="padding: 8px 0; color: #27ae60; font-weight: 700; text-align: right; font-size: 18px;">${orderDetails.currency || '₹'} ${orderDetails.totalAmount}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #5a6c7d; font-weight: 500;">Advance Paid:</td>
+                                            <td style="padding: 8px 0; color: #e67e22; font-weight: 700; text-align: right;">${orderDetails.currency || '₹'} ${orderDetails.Advance_Amount}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; color: #5a6c7d; font-weight: 500;">Payment Method:</td>
+                                            <td style="padding: 8px 0; color: #2c3e50; font-weight: 600; text-align: right;">${orderDetails.paymentMethod}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <!-- Products Section -->
+                                <div style="margin-bottom: 30px;">
+                                    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                                        <img src="https://cdn-icons-png.flaticon.com/512/3514/3514491.png" alt="Products" style="width: 24px; height: 24px; margin-right: 10px;">
+                                        <h3 style="color: #2c3e50; margin: 0; font-size: 20px; font-weight: 600;">Products Ordered</h3>
+                                    </div>
+                                    
+                                    ${hasMultipleProducts ? 
+                                        `<div style="border: 1px solid #e3f2fd; border-radius: 8px; overflow: hidden;">
+                                            <table style="width: 100%; border-collapse: collapse;">
+                                                <thead>
+                                                    <tr style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);">
+                                                        <th style="text-align: left; padding: 15px; color: white; font-weight: 600;">Product</th>
+                                                        <th style="text-align: center; padding: 15px; color: white; font-weight: 600;">Qty</th>
+                                                        <th style="text-align: right; padding: 15px; color: white; font-weight: 600;">Price</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${orderDetails.products.map((product, index) => 
+                                                        `<tr style="background-color: ${index % 2 === 0 ? '#f8f9ff' : '#ffffff'};">
+                                                            <td style="padding: 15px; color: #2c3e50; font-weight: 500; border-bottom: 1px solid #e9ecef;">${product.name || 'N/A'}</td>
+                                                            <td style="text-align: center; padding: 15px; color: #5a6c7d; font-weight: 600; border-bottom: 1px solid #e9ecef;">${product.quantity || '1'}</td>
+                                                            <td style="text-align: right; padding: 15px; color: #27ae60; font-weight: 700; border-bottom: 1px solid #e9ecef;">${orderDetails.currency || '₹'} ${product.price || '0'}</td>
+                                                        </tr>`
+                                                    ).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>` 
+                                        : 
+                                        `<div style="background-color: #f8f9ff; border: 1px solid #e3f2fd; border-radius: 8px; padding: 20px;">
+                                            <div style="display: flex; align-items: center; justify-content: between;">
+                                                <div>
+                                                    <h4 style="color: #2c3e50; margin: 0 0 5px; font-size: 18px; font-weight: 600;">${orderDetails.productName || productName || 'N/A'}</h4>
+                                                    <p style="color: #5a6c7d; margin: 0; font-size: 14px;">Quantity: ${orderDetails.quantity || '1'}</p>
+                                                </div>
+                                                <div style="text-align: right;">
+                                                    <p style="color: #27ae60; margin: 0; font-size: 18px; font-weight: 700;">${orderDetails.currency || '₹'} ${orderDetails.totalAmount}</p>
+                                                </div>
+                                            </div>
+                                        </div>`
+                                    }
+                                </div>
+                                
+                                <!-- Customer & Shipping Info -->
+                                <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+                                    <!-- Customer Details -->
+                                    <div style="flex: 1; background-color: #f8f9ff; border: 1px solid #e3f2fd; border-radius: 8px; padding: 20px;">
+                                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Customer" style="width: 20px; height: 20px; margin-right: 8px;">
+                                            <h4 style="color: #2c3e50; margin: 0; font-size: 16px; font-weight: 600;">Customer Details</h4>
+                                        </div>
+                                        <p style="color: #2c3e50; margin: 0 0 8px; font-weight: 600;">${customerDetails.firstName} ${customerDetails.lastName}</p>
+                                        <p style="color: #5a6c7d; margin: 0 0 5px; font-size: 14px;">${customerEmail}</p>
+                                        <p style="color: #5a6c7d; margin: 0; font-size: 14px;">${customerDetails.phone || 'Phone not provided'}</p>
+                                    </div>
+                                    
+                                    <!-- Shipping Address -->
+                                    <div style="flex: 1; background-color: #f8f9ff; border: 1px solid #e3f2fd; border-radius: 8px; padding: 20px;">
+                                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                            <img src="https://cdn-icons-png.flaticon.com/512/854/854929.png" alt="Shipping" style="width: 20px; height: 20px; margin-right: 8px;">
+                                            <h4 style="color: #2c3e50; margin: 0; font-size: 16px; font-weight: 600;">Shipping Address</h4>
+                                        </div>
+                                        <div style="color: #5a6c7d; font-size: 14px; line-height: 1.5;">
+                                            ${customerDetails.address || ''}<br>
+                                            ${customerDetails.apartment ? customerDetails.apartment + '<br>' : ''}
+                                            ${customerDetails.city || ''}${customerDetails.city && customerDetails.state ? ', ' : ''}${customerDetails.state || ''}${(customerDetails.city || customerDetails.state) && customerDetails.zip ? ' - ' : ''}${customerDetails.zip || ''}<br>
+                                            ${customerDetails.country || ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Status Timeline -->
+                                <div style="background: linear-gradient(145deg, #e8f5e8 0%, #f0f8f0 100%); border: 1px solid #c8e6c9; border-radius: 12px; padding: 25px; margin-bottom: 30px;">
+                                    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                                        <img src="https://cdn-icons-png.flaticon.com/512/2143/2143150.png" alt="Timeline" style="width: 24px; height: 24px; margin-right: 10px;">
+                                        <h3 style="color: #2c3e50; margin: 0; font-size: 20px; font-weight: 600;">What's Next?</h3>
+                                    </div>
+                                    
+                                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                        <div style="width: 12px; height: 12px; background-color: #27ae60; border-radius: 50%; margin-right: 15px;"></div>
+                                        <div>
+                                            <p style="color: #27ae60; margin: 0; font-weight: 600; font-size: 14px;">✓ Order Confirmed</p>
+                                            <p style="color: #5a6c7d; margin: 0; font-size: 12px;">We've received your order and payment</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                        <div style="width: 12px; height: 12px; background-color: #f39c12; border-radius: 50%; margin-right: 15px;"></div>
+                                        <div>
+                                            <p style="color: #f39c12; margin: 0; font-weight: 600; font-size: 14px;">⏳ Processing</p>
+                                            <p style="color: #5a6c7d; margin: 0; font-size: 12px;">We're preparing your order for shipment</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="display: flex; align-items: center;">
+                                        <div style="width: 12px; height: 12px; background-color: #bdc3c7; border-radius: 50%; margin-right: 15px;"></div>
+                                        <div>
+                                            <p style="color: #5a6c7d; margin: 0; font-weight: 600; font-size: 14px;">📦 Shipping</p>
+                                            <p style="color: #5a6c7d; margin: 0; font-size: 12px;">You'll receive tracking details once shipped</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Call to Action -->
+                                <div style="text-align: center; margin-bottom: 30px;">
+                                    <p style="color: #5a6c7d; margin: 0 0 20px; font-size: 16px;">Need help with your order?</p>
+                                    <a href="mailto:israelitesshopping171@gmail.com" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 25px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">Contact Support</a>
+                                </div>
+                                
+                            </td>
+                        </tr>
+                        
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #2c3e50; padding: 30px; text-align: center;">
+                                <div style="margin-bottom: 20px;">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/3176/3176363.png" alt="Store Logo" style="width: 60px; height: 60px; opacity: 0.8;">
+                                </div>
+                                <p style="color: white; margin: 0 0 10px; font-size: 18px; font-weight: 600;">Thank you for choosing us!</p>
+                                <p style="color: rgba(255,255,255,0.8); margin: 0 0 20px; font-size: 14px;">We appreciate your business and look forward to serving you again.</p>
+                                
+                                <p style="color: rgba(255,255,255,0.6); margin: 0; font-size: 12px;">
+                                    © 2025 ${orderDetails.productName || productName || 'N/A'}. All rights reserved.<br>
+                                    This email was sent to ${customerEmail}
+                                </p>
+                            </td>
+                        </tr>
+                        
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+  `;
+  
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: customerEmail,
+    cc: process.env.EMAIL_USER, // CC to admin email
+    subject: emailSubject,
+    html: htmlContent // Add HTML version for better formatting
+  };
+
+    try {
+      console.log("Attempting to send email to:", customerEmail);
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Email sent successfully:", info.messageId);
+      res.status(200).json({ success: true, message: "Confirmation email sent successfully!" });
+    } catch (error) {
+      console.error("Error sending confirmation email:", error);
+      res.status(500).json({ success: false, message: "Failed to send confirmation email", error: error.message });
+    }
+  });
+
+// Abandoned Order Follow
+
+
+
 // Server Metrics Route
 app.get("/server-metrics", (req, res) => {
   // Get initial CPU measurements
@@ -800,6 +1041,10 @@ app.get("/server-metrics", (req, res) => {
     });
   }, 100); // 100ms delay to measure CPU usage
 });
+
+
+
+
 
 // Start Server
 app.listen(PORT, () => {
