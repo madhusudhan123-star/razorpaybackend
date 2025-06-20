@@ -26,7 +26,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({  origin: [
+app.use(cors({
+  origin: [
     'https://agent-sigma-livid.vercel.app',
     'https://sacredrelm.com',
     'https://myiandi.com',
@@ -37,8 +38,7 @@ app.use(cors({  origin: [
     'https://glowglaz-vert.vercel.app',
     'https://drjoints.in',
     'https://drjoints.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:3001' // Added for testing
+    'http://localhost:3000'
   ],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -666,35 +666,12 @@ app.post("/create-order", async (req, res) => {
   try {
     const { amount, currency, receipt, notes } = req.body;
     
-    // Validate required fields
-    if (!amount || !currency || !receipt) {
-      return res.status(400).json({
-        success: false,
-        message: "Amount, currency, and receipt are required"
-      });
-    }
-
-    // Convert amount to smallest currency unit (paise for INR, cents for USD, etc.)
-    let razorpayAmount;
-    if (currency === 'INR') {
-      razorpayAmount = Math.round(parseFloat(amount) * 100); // Convert to paise
-    } else if (currency === 'USD' || currency === 'EUR' || currency === 'GBP' || currency === 'CAD' || currency === 'AUD' || currency === 'SGD') {
-      razorpayAmount = Math.round(parseFloat(amount) * 100); // Convert to cents
-    } else if (currency === 'AED') {
-      razorpayAmount = Math.round(parseFloat(amount) * 100); // Convert to fils
-    } else {
-      razorpayAmount = Math.round(parseFloat(amount) * 100); // Default to cents
-    }
-
     const options = {
-      amount: razorpayAmount, // Amount in smallest currency unit
-      currency: currency,
+      amount: amount * 100, // Convert to paise (Razorpay requires amount in smallest currency unit)
+      currency: currency || "INR",
       receipt: receipt || `receipt_${Date.now()}`,
       notes: notes || {},
-      payment_capture: 1 // Auto capture payment
     };
-    
-    console.log(`Creating Razorpay order with options:`, options);
     
     const order = await razorpay.orders.create(options);
     
@@ -709,98 +686,6 @@ app.post("/create-order", async (req, res) => {
       success: false,
       message: "Failed to create order",
       error: error.message,
-    });
-  }
-});
-
-// Get Exchange Rates API
-app.get("/exchange-rates", async (req, res) => {
-  try {
-    // Using exchangerate-api.com for live exchange rates
-    const response = await fetch('https://api.exchangerate-api.com/v4/latest/INR');
-    const data = await response.json();
-    
-    if (data.rates) {
-      const supportedRates = {
-        'India': { currency: 'INR', symbol: '₹', rate: 1 },
-        'United States': { currency: 'USD', symbol: '$', rate: data.rates.USD || 0.012 },
-        'United Kingdom': { currency: 'GBP', symbol: '£', rate: data.rates.GBP || 0.0095 },
-        'Canada': { currency: 'CAD', symbol: 'C$', rate: data.rates.CAD || 0.016 },
-        'Australia': { currency: 'AUD', symbol: 'A$', rate: data.rates.AUD || 0.018 },
-        'European Union': { currency: 'EUR', symbol: '€', rate: data.rates.EUR || 0.011 },
-        'Singapore': { currency: 'SGD', symbol: 'S$', rate: data.rates.SGD || 0.016 },
-        'United Arab Emirates': { currency: 'AED', symbol: 'د.إ', rate: data.rates.AED || 0.044 },
-      };
-      
-      res.status(200).json({
-        success: true,
-        rates: supportedRates,
-        lastUpdated: data.date || new Date().toISOString().split('T')[0]
-      });
-    } else {
-      throw new Error('Failed to fetch exchange rates');
-    }
-  } catch (error) {
-    console.error("Error fetching exchange rates:", error);
-    
-    // Fallback rates if API fails
-    const fallbackRates = {
-      'India': { currency: 'INR', symbol: '₹', rate: 1 },
-      'United States': { currency: 'USD', symbol: '$', rate: 0.012 },
-      'United Kingdom': { currency: 'GBP', symbol: '£', rate: 0.0095 },
-      'Canada': { currency: 'CAD', symbol: 'C$', rate: 0.016 },
-      'Australia': { currency: 'AUD', symbol: 'A$', rate: 0.018 },
-      'European Union': { currency: 'EUR', symbol: '€', rate: 0.011 },
-      'Singapore': { currency: 'SGD', symbol: 'S$', rate: 0.016 },
-      'United Arab Emirates': { currency: 'AED', symbol: 'د.إ', rate: 0.044 },
-    };
-    
-    res.status(200).json({
-      success: true,
-      rates: fallbackRates,
-      lastUpdated: new Date().toISOString().split('T')[0],
-      note: "Using fallback rates due to API error"
-    });
-  }
-});
-
-// Test endpoint for international payment flow
-app.get("/test-international-payment", async (req, res) => {
-  try {
-    // Test exchange rates
-    const ratesResponse = await fetch(`http://localhost:${PORT}/exchange-rates`);
-    const ratesData = await ratesResponse.json();
-    
-    // Test order creation with USD
-    const testOrder = {
-      amount: 100, // $100 USD
-      currency: 'USD',
-      receipt: 'test_receipt_usd',
-      notes: { test: 'international payment test' }
-    };
-    
-    const orderResponse = await fetch(`http://localhost:${PORT}/create-order`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(testOrder)
-    });
-    
-    const orderData = await orderResponse.json();
-    
-    res.status(200).json({
-      success: true,
-      message: "International payment test completed",
-      exchangeRates: ratesData,
-      orderCreation: orderData,
-      testAmount: testOrder.amount,
-      testCurrency: testOrder.currency
-    });
-    
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "International payment test failed",
-      error: error.message
     });
   }
 });
