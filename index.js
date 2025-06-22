@@ -473,7 +473,6 @@ app.post("/send-order-confirmation", async (req, res) => {
       <p>If you have any questions, please contact our customer service.</p>
       
       <p>Thank you for shopping with us!</p>
-      <h1>madhusudhan</h1>
       <p>Best regards,<br></p>
     </div>
   `;
@@ -577,7 +576,6 @@ app.post("/send-abandoned-order-email", async (req, res) => {
     If you'd like to complete your purchase, you can return to our website and try again.
     
     Thank you for considering our products!
-    Madhusudhan
     Best regards,
     
   `;
