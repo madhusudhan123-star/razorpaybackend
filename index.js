@@ -28,6 +28,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: [
+    'https://sampoornarogya.com',
     'https://agent-sigma-livid.vercel.app',
     'https://sacredrelm.com',
     'https://myiandi.com',
@@ -730,8 +731,6 @@ app.post("/verify-payment", async (req, res) => {
   }
 });
 
-
-
 // Order Confirmation Email Route
 app.post("/agent_to_customer", async (req, res) => {
   const { customerEmail, orderDetails, customerDetails, productName } = req.body;
@@ -1004,6 +1003,8 @@ app.post("/agent_to_customer", async (req, res) => {
   });
 
 // Advance Payment Order Confirmation Email Route
+
+
 app.post("/send-advance-payment-confirmation", async (req, res) => {
   const { customerEmail, orderDetails, customerDetails, productName } = req.body;
   
