@@ -28,6 +28,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: [
+    'https://e-commerce-two-neon.vercel.app',
     'https://sampoornarogya.com',
     'https://agent-sigma-livid.vercel.app',
     'https://sacredrelm.com',
